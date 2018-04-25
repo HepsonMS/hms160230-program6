@@ -23,7 +23,7 @@ using namespace std;
 class BinaryFileHeader
 {
 public:
-  uint32_t magicNumber;;
+  uint32_t magicNumber;
   uint32_t versionNumber;
   uint64_t numRecords;
 };
@@ -32,7 +32,6 @@ const int maxRecordStringLength = 25;
 class BinaryFileRecord
 {
 public:
-	
   uint8_t strLength;
   char stringBuffer[maxRecordStringLength];
 };
@@ -113,9 +112,9 @@ int main()
   drawCDKMatrix(myMatrix, true);   //required
   
   //display records---------------------------------------------------------------------------
-  BinaryFileRecord *myRecord = new BinaryFileRecord();
   for(int i=0; i<4; i++)
-  {  
+  {
+    BinaryFileRecord *myRecord = new BinaryFileRecord();
     binInFile.read((char *) myRecord, sizeof(BinaryFileRecord));
     //concatonate strLength with "strlen: " and convert to char array
     stringstream lengthSS;
