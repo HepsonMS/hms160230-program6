@@ -8,13 +8,34 @@
 
 #include <iostream>
 #include "cdk.h"
+#include <stdint.h>
+#include <fstream>
+#include <sstream>
+#include <string>
 
-#define MATRIX_WIDTH 5
-#define MATRIX_HEIGHT 3
-#define BOX_WIDTH 15
+#define MATRIX_WIDTH 3
+#define MATRIX_HEIGHT 5
+#define BOX_WIDTH 18
 #define MATRIX_NAME_STRING "Test Matrix"
 
 using namespace std;
+
+class BinaryFileHeader
+{
+public:
+  uint32_t magicNumber;;
+  uint32_t versionNumber;
+  uint64_t numRecords;
+};
+
+const int maxRecordStringLength = 25;
+class BinaryFileRecord
+{
+public:
+	
+  uint8_t strLength;
+  char stringBuffer[maxRecordStringLength];
+};
 
 int main()
 {
@@ -23,33 +44,19 @@ int main()
   CDKSCREEN	*cdkscreen;
   CDKMATRIX     *myMatrix;           // CDK Screen Matrix
 
-  // Remember that matrix starts out at 1,1.
-  // Since arrays start out at 0, the first entries
-  // below ("R0", and "C0") are just placeholders
-  // 
-  // Finally... make sure your arrays have enough entries given the
-  // values you choose to set for MATRIX_WIDTH and MATRIX_HEIGHT
-  // above.
-
-  const char 		*rowTitles[] = {"R0", "R1", "R2", "R3", "R4", "R5"};
-  const char 		*columnTitles[] = {"C0", "C1", "C2", "C3", "C4", "C5"};
+  const char 		*rowTitles[] = {"R0", "a", "b", "c", "d", "e"};
+  const char 		*columnTitles[] = {"C0", "a", "b", "c", "d", "e"};
   int		boxWidths[] = {BOX_WIDTH, BOX_WIDTH, BOX_WIDTH, BOX_WIDTH, BOX_WIDTH, BOX_WIDTH};
   int		boxTypes[] = {vMIXED, vMIXED, vMIXED, vMIXED,  vMIXED,  vMIXED};
 
-  /*
-   * Initialize the Cdk screen.
-   *
-   * Make sure the putty terminal is large enough
-   */
+  //initialize the Cdk screen.
   window = initscr();
   cdkscreen = initCDKScreen(window);
 
-  /* Start CDK Colors */
+  //start CDK Colors
   initCDKColor();
 
-  /*
-   * Create the matrix.  Need to manually cast (const char**) to (char **)
-  */
+  //create the matrix.  Need to manually cast (const char**) to (char **)
   myMatrix = newCDKMatrix(cdkscreen, CENTER, CENTER, MATRIX_HEIGHT, MATRIX_WIDTH, MATRIX_HEIGHT, MATRIX_WIDTH,
 			  MATRIX_NAME_STRING, (char **) rowTitles, (char **) columnTitles, boxWidths,
 				     boxTypes, 1, 1, ' ', ROW, true, true, false);
@@ -60,20 +67,77 @@ int main()
       _exit(1);
     }
 
-  /* Display the Matrix */
+  //display the Matrix
   drawCDKMatrix(myMatrix, true);
+  //create input binary file stream
+  ifstream binInFile("cs3377.bin", ios::in | ios::binary);
 
-  /*
-   * Dipslay a message
-   */
-  setCDKMatrixCell(myMatrix, 2, 2, "Test Message");
-  setCDKMatrixCell(myMatrix, 1, 1, "Test 2 Message");
-  drawCDKMatrix(myMatrix, true);    /* required  */
+  //display headers---------------------------------------------------------
+  BinaryFileHeader *myHeader = new BinaryFileHeader();
+  binInFile.read((char *) myHeader, sizeof(BinaryFileHeader));
+  //convert magic number to hex and make to char array
+  stringstream magNumSS;
+  magNumSS << "0x" << hex << uppercase <<  myHeader->magicNumber;
+  string magNumString = magNumSS.str();
+  char magNumChar[10];
+  strcpy(magNumChar, magNumString.c_str());
+  //make version number to char array
+  char verNum[32];
+  sprintf(verNum, "%u", myHeader->versionNumber);
+  //make number of records to char array
+  char numRec[64];
+  sprintf(numRec, "%lu", myHeader->numRecords);
+ 
+  //concatonate labels to all 3 numbers and keep as char arrays
+  char magText[17] = "Magic: ";
+  for(int i=7; i<17; i++)
+  {
+    magText[i] = magNumChar[i-7];
+  }
+  char verText[41] = "Version: ";
+  for(int i=9; i<41; i++)
+  {
+    verText[i] = verNum[i-9];
+  }
+  char recText[44] = "NumRecords: ";
+  for(int i=12; i<44; i++)
+  {
+    recText[i] = numRec[i-12];
+  }
 
-  /* So we can see results, pause until a key is pressed. */
+  //add char arrays to matrix
+  setCDKMatrixCell(myMatrix, 1, 1, magText);
+  setCDKMatrixCell(myMatrix, 1, 2, verText);
+  setCDKMatrixCell(myMatrix, 1, 3, recText);
+
+  drawCDKMatrix(myMatrix, true);   //required
+  
+  //display records---------------------------------------------------------------------------
+  BinaryFileRecord *myRecord = new BinaryFileRecord();
+  for(int i=0; i<4; i++)
+  {  
+    binInFile.read((char *) myRecord, sizeof(BinaryFileRecord));
+    //concatonate strLength with "strlen: " and convert to char array
+    stringstream lengthSS;
+    lengthSS << "strlen: " << myRecord->strLength;
+    string lengthString = lengthSS.str();
+    char lengthChar[16];
+    strcpy(lengthChar, lengthString.c_str());
+
+    setCDKMatrixCell(myMatrix, i+2, 1, lengthChar);
+    setCDKMatrixCell(myMatrix, i+2, 2, myRecord->stringBuffer);
+  }
+
+  drawCDKMatrix(myMatrix, true);  //required
+
+  //pause until a key is pressed--------------------------------------------------------------
   unsigned char x;
   cin >> x;
 
-  // Cleanup screen
+  //cleanup screen
   endCDK();
+  
+  //cleanup dynamic memory
+  delete myHeader;
+  return 0;
 }
