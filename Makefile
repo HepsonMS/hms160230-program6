@@ -11,11 +11,6 @@ CPPFLAGS = -I/scratch/perkins/include
 LDFLAGS = -L/scratch/perkins/lib
 LDLIBS = -lcdk -lcurses 
 
-
-#
-# PROJECTNAME is a descriptive name used for the backup target
-# This should not contain spaces or special characters
-
 EXECFILE = exe
 
 OBJS = cdkexample.o
