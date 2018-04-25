@@ -125,6 +125,7 @@ int main()
 
     setCDKMatrixCell(myMatrix, i+2, 1, lengthChar);
     setCDKMatrixCell(myMatrix, i+2, 2, myRecord->stringBuffer);
+    delete myRecord;
   }
 
   drawCDKMatrix(myMatrix, true);  //required
